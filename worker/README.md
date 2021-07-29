@@ -1,4 +1,4 @@
-## Worker Java App
+## Worker Java App CI
 
 [![Build Status](http://35.187.225.246:8080/buildStatus/icon?job=instavote%2Fworker-build&subject=Build&color=blue)](http://35.187.225.246:8080/job/instavote/job/worker-build/)
 
