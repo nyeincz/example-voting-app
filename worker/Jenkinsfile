@@ -64,6 +64,7 @@ pipeline {
                agent any
             when{
                 changeset "**/worker/**"
+                branch 'master'
             }
             steps{
                 echo 'Packaging worker app with docker' 
@@ -79,7 +80,7 @@ pipeline {
     }
     post{
         always{
-            echo 'Pipeline for worker is completed.'
+            echo 'Building multibranch pipeline for worker is completed...'
         }
     }
 }
