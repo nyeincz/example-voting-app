@@ -1,27 +1,50 @@
-vote:
- image: chanzin/vote:master
- ports:
-  - 5000:80
- links:
-  - redis:redis
+version: "3.7"
 
-redis:
- image: redis:alpine
+volumes:
+        db-data:
 
-db:
-  image: postgres:9.4
-  environment:
+networks:
+  instavote:
+    driver: bridge
+
+services:
+  vote:
+   image: chanzin/vote:master
+   ports:
+    - 5000:80
+   depends_on:
+    - redis
+   networks:
+    - instavote
+
+  redis:
+   image: redis:alpine
+   networks:
+    - instavote
+
+  db:
+    image: postgres:9.4
+    networks:
+     - instavote
+    environment:
           POSTGRES_DB: "db"
           POSTGRES_HOST_AUTH_METHOD: "trust"
-result:
- image: chanzin/result:master
- ports:
-  - 5001:4000
- links:
-  - db:db
+    volumes:
+     - "db-data:/var/lib/postgresql/data"
 
-worker:
- image: chanzin/worker:master
- links:
-   - redis:redis
-   - db:db
+  result:
+   image: chanzin/result:master
+   networks:
+    - instavote
+   ports:
+    - 5001:4000
+   depends_on:
+    - db
+
+  worker:
+   image: chanzin/worker:master
+   networks:
+    - instavote
+   depends_on:
+     - redis
+     - db
