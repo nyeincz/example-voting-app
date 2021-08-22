@@ -5,8 +5,8 @@ import socket
 import random
 import json
 
-option_a = os.getenv('OPTION_A', "BTC")
-option_b = os.getenv('OPTION_B', "ETH")
+option_a = os.getenv('OPTION_A', "Atom")
+option_b = os.getenv('OPTION_B', "VS Code")
 hostname = socket.gethostname()
 version = 'v2'
 
