@@ -8,7 +8,7 @@ import json
 option_a = os.getenv('OPTION_A', "Atom")
 option_b = os.getenv('OPTION_B', "VS Code")
 hostname = socket.gethostname()
-version = 'v2'
+version = 'v4'
 
 app = Flask(__name__)
 
