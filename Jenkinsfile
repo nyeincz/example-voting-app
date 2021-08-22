@@ -4,7 +4,7 @@ pipeline {
     
     
     stages {
-        stage('Build'){
+        stage('Worker Build'){
             agent {
              docker {
                     image 'maven:3.6.1-jdk-8-alpine'
@@ -22,7 +22,7 @@ pipeline {
             }
         }
         
-        stage('Test') {
+        stage('Worker Test') {
             agent {
              docker {
                     image 'maven:3.6.1-jdk-8-alpine'
@@ -40,7 +40,7 @@ pipeline {
             }
         }
         
-        stage('Package'){
+        stage('Worker Package'){
                   agent {
              docker {
                     image 'maven:3.6.1-jdk-8-alpine'
@@ -58,9 +58,9 @@ pipeline {
                 archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true 
                 }
                 
-            }
+            } 
         }
-           stage('docker-package'){
+           stage('Worker docker-package'){
                agent any
             when{
                 changeset "**/worker/**"
@@ -77,10 +77,120 @@ pipeline {
                 }
             }
         }
+         stage('Result Build'){
+             agent{
+                 docker{
+                    image 'node:16.6.1-alpine'
+                }
+            }
+            when{
+                changeset "**/result/**"
+            }
+            steps {
+                echo 'Compiling result app..'
+                dir('result'){
+                sh 'npm install' 
+                }
+            }
+        }
+        
+        stage('Result Test') {
+            agent{
+                docker{
+                    image 'node:16.6.1-alpine'
+                    }
+                } 
+            when{
+                changeset "**/result/**"
+            }
+            steps {
+                echo 'Running Unit Tests on result app.'
+                 dir('result'){
+                sh 'npm install'     
+                sh 'npm test' 
+                }
+            }
+        }
+        stage('Result docker-package'){
+               agent any
+            when{
+                changeset "**/result/**"
+                branch 'master'
+            }
+            steps{
+                echo 'Packaging Result App with docker' 
+                script{
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerlogin'){
+                     def workerImage = docker.build("chanzin/result:v${env.BUILD_ID}", "./result")
+                     workerImage.push()
+                     workerImage.push("${env.BRANCH_NAME}")
+                    }
+                }
+            }
+        }
+        stage('Vote Build'){
+            agent{
+                 docker{
+                    image 'python:2.7.16-slim'
+                    args '--user root'
+                     }
+            }
+            when{
+                changeset "**/vote/**"
+            }
+            steps {
+                echo 'Compiling vote app..'
+                dir('vote'){
+                sh 'pip install -r requirements.txt' 
+                }
+            }
+        }
+        
+        stage('Vote Test') {
+            agent{
+                docker{
+                    image 'python:2.7.16-slim'
+                        args '--user root'
+                     }
+            }
+            when{
+                changeset "**/vote/**"
+            }
+            steps {
+                echo 'Running Unit Tests on vote app.'
+                 dir('vote'){
+                sh 'pip install -r requirements.txt'
+                sh 'nosetests -v' 
+                }
+            }
+        }
+        stage('Vote docker-package'){
+               agent any
+            when{
+                changeset "**/vote/**"
+                branch 'master'
+            }
+            steps{
+                echo 'Packaging Vote app with docker' 
+                script{
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerlogin'){
+                     def workerImage = docker.build("chanzin/vote:v${env.BUILD_ID}", "./vote")
+                     workerImage.push()
+                     workerImage.push("${env.BRANCH_NAME}")
+                    }
+                }
+            }
+        }
     }
     post{
         always{
-            echo 'Building multibranch pipeline for worker is completed...'
+            echo 'Pipeline for InstaVote App  is completed...'
+        }
+        failure{
+            echo 'Build Failed ${env.JOB_NAME} ${env.BUILD_NUMBER}'
+        }
+        success{
+            echo 'Build Succeed ${env.JOB_NAME} ${env.BUILD_NUMBER}'
         }
     }
 }
