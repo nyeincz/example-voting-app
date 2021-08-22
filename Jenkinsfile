@@ -1,0 +1,86 @@
+pipeline {
+    
+    agent none
+    
+    
+    stages {
+        stage('Build'){
+            agent {
+             docker {
+                    image 'maven:3.6.1-jdk-8-alpine'
+                    args '-v $HOME/.m2:/root/.m2'
+                 }
+                }
+            when{
+                changeset "**/worker/**"
+            }
+            steps {
+                echo 'Compiling worker app..'
+                dir('worker'){
+                sh 'mvn compile' 
+                }
+            }
+        }
+        
+        stage('Test') {
+            agent {
+             docker {
+                    image 'maven:3.6.1-jdk-8-alpine'
+                    args '-v $HOME/.m2:/root/.m2'
+                 }
+                }
+            when{
+                changeset "**/worker/**"
+            }
+            steps {
+                echo 'Running Unit Tests on worker app.'
+                 dir('worker'){
+                sh 'mvn clean test' 
+                }
+            }
+        }
+        
+        stage('Package'){
+                  agent {
+             docker {
+                    image 'maven:3.6.1-jdk-8-alpine'
+                    args '-v $HOME/.m2:/root/.m2'
+                 }
+                }
+            when{
+                branch 'master'
+                changeset "**/worker/**"
+            }
+            steps{
+                echo 'Packaging worker app'
+                 dir('worker'){
+                sh 'mvn package -DskipTests'
+                archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true 
+                }
+                
+            }
+        }
+           stage('docker-package'){
+               agent any
+            when{
+                changeset "**/worker/**"
+                branch 'master'
+            }
+            steps{
+                echo 'Packaging worker app with docker' 
+                script{
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerlogin'){
+                     def workerImage = docker.build("chanzin/worker:v${env.BUILD_ID}", "./worker")
+                     workerImage.push()
+                     workerImage.push("${env.BRANCH_NAME}")
+                    }
+                }
+            }
+        }
+    }
+    post{
+        always{
+            echo 'Building multibranch pipeline for worker is completed...'
+        }
+    }
+}
