@@ -187,10 +187,10 @@ pipeline {
             echo 'Pipeline for InstaVote App  is completed...'
         }
         failure{
-            echo 'Build Failed ${env.JOB_NAME} ${env.BUILD_NUMBER}'
+            echo 'Build Failed'
         }
         success{
-            echo 'Build Succeed ${env.JOB_NAME} ${env.BUILD_NUMBER}'
+            echo 'Build Succeed'
         }
     }
 }
