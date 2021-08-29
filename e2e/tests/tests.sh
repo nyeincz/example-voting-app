@@ -1,7 +1,7 @@
 #!/bin/bash
 
-current=""
-next=""
+current=0
+next=0
 
 while ! timeout 1 bash -c "echo > /dev/tcp/vote/80"; do
     sleep 1
@@ -9,6 +9,8 @@ done
 
 # add initial vote 
 curl -sS -X POST --data "vote=a" http://vote > /dev/null
+
+sleep 5
 
 current=`phantomjs render.js "http://result:4000/" | grep -i vote | cut -d ">" -f 4 | cut -d " " -f1`
 next=`echo "$(($current + 1))"`
