@@ -250,6 +250,13 @@ pipeline {
         }
     }
 
+ stage('E2E Test') {
+      agent any
+      steps {
+        sh 'sh e2e.sh'
+      }
+    }
+
     stage('Deploy to Dev') {
       agent any
       when{
